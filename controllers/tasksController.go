@@ -46,11 +46,12 @@ func ReadTasks(w http.ResponseWriter, r *http.Request) {
 	splitToken := strings.Split(reqToken, "Bearer ")
 	reqToken = splitToken[1]
 
-	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+	//claims, _ := middlewares.ExtractTokenClaims(reqToken)
 
-	client_id := claims["client_id"].(string)
+	//client_id := claims["client_id"].(string)
 
-	db.GetTasksByUser(client_id)
+	//results := db.GetTasksByUser(client_id)
+	//fmt.Println("res", results)
 	tasks := db.GetTasks()
 	response.JSONS(w, tasks)
 }

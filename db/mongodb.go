@@ -63,16 +63,51 @@ func InsertTask(task models.Task) interface{} {
 	return result.InsertedID
 }
 
-func GetTasksByUser(userId string) {
+func GetTasksByUser(userId string) []models.Task {
+	var results []models.UsersTask
+	var tasks []models.Task
+	//var task models.Task
+	var elem models.UsersTask
 	cur, err := db.Collection(USERTASKCOLLECTION).Find(context.Background(), bson.M{"userid": userId})
 	if err != nil {
 		fmt.Println("Errs", err)
 		log.Fatal(err)
 	}
-	fmt.Println("TASK BY USER", cur)
+	if err = cur.All(context.Background(), &results); err != nil {
+		log.Fatal(err)
+	}
+
+	for cur.Next(context.Background()) {
+		err := cur.Decode(&elem)
+		if err != nil {
+			fmt.Println("Err", err)
+			log.Fatal(err)
+		}
+		//results = append(results, elem.TaskId)
+		fmt.Println("TASK ID", elem.TaskId)
+	}
+	fmt.Println("TASK BY USER", results)
+
+	/*filterCur := db.Collection(COLLECTNAME).Find(context.Background(), results)
+	for filterCur.Next(context.Background()) {
+		err := filterCur.Decode(&task)
+		if err != nil {
+			fmt.Println("Err", err)
+			log.Fatal(err)
+		}
+		tasks = append(tasks, task)
+	}
+	if err := cur.Err(); err != nil {
+		fmt.Println("Erros", err)
+		log.Fatal(err)
+	}
+	cur.Close(context.Background())*/
+
+	return tasks
 }
 
 func GetTasks() []models.Task {
+	//cur, err := db.Collection(COLLECTNAME).Find(context.Background(), bson.D{{}})
 	cur, err := db.Collection(COLLECTNAME).Find(context.Background(), bson.D{{}})
 	if err != nil {
 		fmt.Println("Errs", err)
