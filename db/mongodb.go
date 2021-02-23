@@ -66,8 +66,9 @@ func InsertTask(task models.Task) interface{} {
 func GetTasksByUser(userId string) []models.Task {
 	var results []models.UsersTask
 	var tasks []models.Task
-	//var task models.Task
+	var task models.Task
 	var elem models.UsersTask
+
 	cur, err := db.Collection(USERTASKCOLLECTION).Find(context.Background(), bson.M{"userid": userId})
 	if err != nil {
 		fmt.Println("Errs", err)
@@ -83,12 +84,26 @@ func GetTasksByUser(userId string) []models.Task {
 			fmt.Println("Err", err)
 			log.Fatal(err)
 		}
-		//results = append(results, elem.TaskId)
-		fmt.Println("TASK ID", elem.TaskId)
+		results = append(results, elem)
 	}
-	fmt.Println("TASK BY USER", results)
 
-	/*filterCur := db.Collection(COLLECTNAME).Find(context.Background(), results)
+	fmt.Println(results)
+
+	for i, s := range results {
+		fmt.Println(i, s.TaskId)
+	}
+
+	oids := make([]interface{}, len(results))
+	fmt.Println("OIDS", oids)
+	for i, s := range results {
+		fmt.Println(results[i].TaskId)
+		objID := s.TaskId
+		if err == nil {
+			oids = append(oids, objID)
+		}
+	}
+
+	filterCur, err := db.Collection(COLLECTNAME).Find(context.Background(), bson.M{"_id": bson.M{"$in": oids}})
 	for filterCur.Next(context.Background()) {
 		err := filterCur.Decode(&task)
 		if err != nil {
@@ -101,13 +116,11 @@ func GetTasksByUser(userId string) []models.Task {
 		fmt.Println("Erros", err)
 		log.Fatal(err)
 	}
-	cur.Close(context.Background())*/
-
+	cur.Close(context.Background())
 	return tasks
 }
 
 func GetTasks() []models.Task {
-	//cur, err := db.Collection(COLLECTNAME).Find(context.Background(), bson.D{{}})
 	cur, err := db.Collection(COLLECTNAME).Find(context.Background(), bson.D{{}})
 	if err != nil {
 		fmt.Println("Errs", err)
@@ -197,6 +210,36 @@ func GetUser(user models.User) models.User {
 	fmt.Println("CURE", result)
 
 	return result
+}
+
+func GetUserTask(taskId string) models.Task {
+	var result models.Task
+	taskID, err := primitive.ObjectIDFromHex(taskId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := db.Collection(COLLECTNAME).FindOne(context.Background(), bson.M{"_id": taskID}).Decode(&result); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("CURE", result)
+
+	return result
+}
+
+func CheckUserTask(userId string, taskId string) bool {
+	fmt.Println("Y", taskId)
+	taskID, err := primitive.ObjectIDFromHex(taskId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var result models.UsersTask
+	if err := db.Collection(USERTASKCOLLECTION).FindOne(context.Background(), bson.M{"userid": userId, "taskid": taskID}).Decode(&result); err != nil {
+		return false
+	}
+	fmt.Println("X", result)
+
+	return true
 }
 
 func AssignTask(usertask models.UsersTask) {

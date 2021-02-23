@@ -28,11 +28,11 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&task)
 
 	taskId := db.InsertTask(task)
-	strTaskId := fmt.Sprintf("%v", taskId)
+	//strTaskId := fmt.Sprintf("%v", taskId)
 	fmt.Println("Task ID", taskId)
 
 	userTask := models.UsersTask{
-		TaskId: strTaskId,
+		TaskId: taskId,
 		UserId: client_id,
 	}
 
@@ -46,39 +46,82 @@ func ReadTasks(w http.ResponseWriter, r *http.Request) {
 	splitToken := strings.Split(reqToken, "Bearer ")
 	reqToken = splitToken[1]
 
-	//claims, _ := middlewares.ExtractTokenClaims(reqToken)
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
 
-	//client_id := claims["client_id"].(string)
+	client_id := claims["client_id"].(string)
 
-	//results := db.GetTasksByUser(client_id)
-	//fmt.Println("res", results)
-	tasks := db.GetTasks()
+	tasks = db.GetTasksByUser(client_id)
+
 	response.JSONS(w, tasks)
 }
 
 func ReadTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	fmt.Println("Read Single Task", paramId)
-	payload := db.GetTasks()
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+
+	client_id := claims["client_id"].(string)
+	/*payload := db.GetTasks()
 	for _, p := range payload {
 		if p.ID == paramId {
 			response.JSON(w, p)
 			return
 		}
+	}*/
+	exist := db.CheckUserTask(client_id, paramId)
+	if !exist {
+		response.ERROR(w, "Permission Denied")
+		return
 	}
-	response.ERROR(w, "Task not found")
+	result := db.GetUserTask(paramId)
+	response.JSON(w, result)
 }
 
 func UpdateTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	fmt.Println("Update Task", paramId)
+
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+
+	client_id := claims["client_id"].(string)
+
+	exist := db.CheckUserTask(client_id, paramId)
+	if !exist {
+		response.ERROR(w, "Permission Denied")
+		return
+	}
+
 	var task models.Task
 	_ = json.NewDecoder(r.Body).Decode(&task)
 	db.UpdateTask(task, paramId)
+	response.JSON(w, "Task Updated")
 }
 
 func DeleteTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	fmt.Println("Delete Task", paramId)
+
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+
+	client_id := claims["client_id"].(string)
+
+	exist := db.CheckUserTask(client_id, paramId)
+	if !exist {
+		response.ERROR(w, "Permission Denied")
+		return
+	}
+
 	db.DeleteTask(paramId)
-	response.MESSAGE(w, "Task deleted")
+	response.JSON(w, "Task deleted")
 }
 
 func TaskHandler(w http.ResponseWriter, r *http.Request) {
