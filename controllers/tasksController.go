@@ -3,8 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"go-server/db"
-	"go-server/models"
+	"go-todo/db"
+	"go-todo/middlewares"
+	"go-todo/models"
+	response "go-todo/utility"
 	"net/http"
 	"strings"
 )
@@ -12,17 +14,45 @@ import (
 var tasks []models.Task
 
 func CreateTask(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Create Task")
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+
+	client_id := claims["client_id"].(string)
+	fmt.Println("Client ID", client_id)
+
+	fmt.Println("Create Task", reqToken)
 	var task models.Task
 	_ = json.NewDecoder(r.Body).Decode(&task)
-	db.InsertTask(task)
-	json.NewEncoder(w).Encode(task)
+
+	taskId := db.InsertTask(task)
+	strTaskId := fmt.Sprintf("%v", taskId)
+	fmt.Println("Task ID", taskId)
+
+	userTask := models.UsersTask{
+		TaskId: strTaskId,
+		UserId: client_id,
+	}
+
+	db.AssignTask(userTask)
+	response.JSON(w, task)
 }
 
 func ReadTasks(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Read Tasks")
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	claims, _ := middlewares.ExtractTokenClaims(reqToken)
+
+	client_id := claims["client_id"].(string)
+
+	db.GetTasksByUser(client_id)
 	tasks := db.GetTasks()
-	json.NewEncoder(w).Encode(tasks)
+	response.JSONS(w, tasks)
 }
 
 func ReadTask(w http.ResponseWriter, r *http.Request, paramId string) {
@@ -30,22 +60,24 @@ func ReadTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	payload := db.GetTasks()
 	for _, p := range payload {
 		if p.ID == paramId {
-			json.NewEncoder(w).Encode(p)
+			response.JSON(w, p)
 			return
 		}
 	}
-	json.NewEncoder(w).Encode("Task not found")
+	response.ERROR(w, "Task not found")
 }
 
 func UpdateTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	fmt.Println("Update Task", paramId)
-
+	var task models.Task
+	_ = json.NewDecoder(r.Body).Decode(&task)
+	db.UpdateTask(task, paramId)
 }
 
 func DeleteTask(w http.ResponseWriter, r *http.Request, paramId string) {
 	fmt.Println("Delete Task", paramId)
 	db.DeleteTask(paramId)
-	json.NewEncoder(w).Encode("Task deleted")
+	response.MESSAGE(w, "Task deleted")
 }
 
 func TaskHandler(w http.ResponseWriter, r *http.Request) {

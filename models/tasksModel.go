@@ -10,5 +10,5 @@ type Task struct {
 	Description string    `json:"description"`
 	Priority    int       `json:"priority"`
 	DueDate     time.Time `json:"duedate"`
-	Complete    bool      `json:"complete"`
+	IsComplete  bool      `json:"isComplete"`
 }

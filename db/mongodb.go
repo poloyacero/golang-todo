@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"go-server/models"
+	"go-todo/models"
 	"log"
 	"reflect"
 
@@ -21,6 +21,8 @@ const DBNAME = "todos"
 
 // collection name
 const COLLECTNAME = "tasks"
+const USERCOLLECTION = "users"
+const USERTASKCOLLECTION = "users_tasks"
 
 var db *mongo.Database
 
@@ -46,13 +48,28 @@ func init() {
 	fmt.Println("Connected to MongoDB!")
 }
 
-func InsertTask(task models.Task) {
+func InsertTask(task models.Task) interface{} {
+	//var result models.Task
 	fmt.Println("InsertTask", task)
-	_, err := db.Collection(COLLECTNAME).InsertOne(context.Background(), task)
+	result, err := db.Collection(COLLECTNAME).InsertOne(context.Background(), task)
+
+	fmt.Println("INSERTED TASK", result)
+
 	if err != nil {
 		fmt.Println("Errs", err)
 		log.Fatal(err)
 	}
+
+	return result.InsertedID
+}
+
+func GetTasksByUser(userId string) {
+	cur, err := db.Collection(USERTASKCOLLECTION).Find(context.Background(), bson.M{"userid": userId})
+	if err != nil {
+		fmt.Println("Errs", err)
+		log.Fatal(err)
+	}
+	fmt.Println("TASK BY USER", cur)
 }
 
 func GetTasks() []models.Task {
@@ -86,7 +103,21 @@ func GetTask(task models.Task) {
 }
 
 func UpdateTask(task models.Task, taskId string) {
-
+	idPrimitive, err := primitive.ObjectIDFromHex(taskId)
+	if err != nil {
+		log.Fatal("primitive.ObjectIDFromHex ERROR:", err)
+	}
+	result, err := db.Collection(COLLECTNAME).UpdateOne(
+		context.Background(),
+		bson.M{"_id": idPrimitive},
+		bson.D{
+			{"$set", bson.D{{"iscomplete", true}}},
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(result)
 }
 
 func DeleteTask(taskId string) {
@@ -112,4 +143,31 @@ func DeleteTask(taskId string) {
 		fmt.Println("DeleteOne TYPE:", reflect.TypeOf(res))
 	}
 
+}
+
+func InsertUser(user models.User) {
+	fmt.Println("Create User", user)
+	_, err := db.Collection(USERCOLLECTION).InsertOne(context.Background(), user)
+	if err != nil {
+		fmt.Println("Errs", err)
+		log.Fatal(err)
+	}
+}
+
+func GetUser(user models.User) models.User {
+	var result models.User
+	if err := db.Collection(USERCOLLECTION).FindOne(context.Background(), bson.M{"email": user.Email}).Decode(&result); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("CURE", result)
+
+	return result
+}
+
+func AssignTask(usertask models.UsersTask) {
+	_, err := db.Collection(USERTASKCOLLECTION).InsertOne(context.Background(), usertask)
+	if err != nil {
+		fmt.Println("Errs", err)
+		log.Fatal(err)
+	}
 }
