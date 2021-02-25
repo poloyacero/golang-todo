@@ -1,0 +1,26 @@
+version: "3.7"
+services:
+  mongo:
+    image: "mongo"
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-volume:/data/db
+    restart: always
+  app:
+    build: ./golang-todo
+    container_name: golang-todo
+    ports:
+      - "8000:8000"
+    depends_on: 
+      - "mongo"
+    restart: always
+  mongo_express:
+    image: mongo-express
+    container_name: mongo_express
+    depends_on:
+      - "mongo"
+    ports:
+      - "3000:3000"
+    restart: always
