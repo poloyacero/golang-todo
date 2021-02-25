@@ -19,3 +19,7 @@ http://localhost:8080/auth/signup - POST
     email,
     password
 }
+
+
+
+*not for production
