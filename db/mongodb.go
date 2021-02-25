@@ -14,7 +14,7 @@ import (
 )
 
 // DB connection domain
-const MONGOCONNECTION = "mongodb://localhost:27017"
+const MONGOCONNECTION = "mongodb://mongo:27017"
 
 // DB name
 const DBNAME = "todos"

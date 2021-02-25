@@ -20,5 +20,5 @@ func main() {
 	http.Handle("/tasks/", middlewares.IsAuthorized(controllers.TaskSpecificHandler))
 	http.HandleFunc("/auth/", controllers.UserHandler)
 	http.Handle("/test", middlewares.IsAuthorized(test))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
